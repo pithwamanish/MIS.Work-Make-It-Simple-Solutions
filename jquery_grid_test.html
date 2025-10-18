@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jQuery Grid Parser Test</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+        th { background: #f5f5f5; }
+        .controls { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+        .controls button { padding: 6px 10px; }
+        .hint { color: #555; font-size: 12px; margin-top: 4px; }
+    </style>
+    <script>
+        // Configure final grid columns and order
+        const columns = [
+            { key: 'Cate',      label: 'Cate' },
+            { key: 'Item',      label: 'Item' },
+            { key: 'Qty',       label: 'Qty' },
+            { key: 'weight',    label: 'Weight' },
+            { key: 'peti_rate', label: 'Peti Rate' },
+            { key: 'amount',    label: 'Amount' },
+            { key: 'item150',   label: 'item150' },
+            { key: 'oilSlip',   label: 'oilSlip' },
+            { key: 'pcs_rate',  label: 'pcs_rate' },
+            { key: 'Rice',      label: 'Rice' }
+        ];
+
+        function parseRows(raw) {
+            const rows = raw
+                .split(',')
+                .map(function (s) { return s.trim(); })
+                .filter(function (s) { return s.length > 0; });
+
+            return rows.map(function (row) {
+                const parts = row.split('@')
+                    .map(function (s) { return s.trim(); })
+                    .filter(Boolean);
+
+                const record = {};
+                record.Cate = parts[0] || '';
+                record.Item = parts[1] || '';
+                record.Qty  = parts[2] || '';
+
+                for (var i = 3; i < parts.length; i++) {
+                    var seg = parts[i];
+                    if (!seg) continue;
+                    var spaceIdx = seg.indexOf(' ');
+                    if (spaceIdx === -1) continue;
+                    var key = seg.slice(0, spaceIdx).trim();
+                    var value = seg.slice(spaceIdx + 1).trim();
+                    record[key] = value;
+                }
+                return record;
+            });
+        }
+
+        function buildTable(data) {
+            var thead = document.querySelector('#grid thead');
+            var tbody = document.querySelector('#grid tbody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            var headRow = document.createElement('tr');
+            columns.forEach(function (col) {
+                var th = document.createElement('th');
+                th.textContent = col.label;
+                headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+
+            data.forEach(function (rec) {
+                var tr = document.createElement('tr');
+                columns.forEach(function (col) {
+                    var td = document.createElement('td');
+                    var val = (rec[col.key] != null) ? rec[col.key] : '';
+                    td.textContent = val;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function preloadSample() {
+            var sample = [
+                'OIL @ PANSARI MUSTARD 1 LTR PP @ 67 @ weight 737 @ peti_rate 1404.00 @ amount 94068.00 @ item150 0 @ oilSlip 1 @ pcs_rate 117.00 @ Rice 0',
+                'OIL @ PANSARI MUSTARD 500 ML PP @ 9 @ weight 99 @ peti_rate 1422.00 @ amount 12798.00 @ item150 0 @ oilSlip 1 @ pcs_rate 59.25 @ Rice 0',
+                'FLOUR @ ATTA 1 KG x 20 @ 120 @ weight 2400 @ peti_rate 800.00 @ amount 96000.00 @ item150 1 @ oilSlip 0 @ pcs_rate 40.00 @ Rice 0'
+            ].join(',\n');
+            document.getElementById('rawInput').value = sample;
+        }
+
+        $(function () {
+            preloadSample();
+            $('#buildGrid').on('click', function () {
+                var raw = $('#rawInput').val();
+                var data = parseRows(raw);
+                buildTable(data);
+            });
+
+            $('#clearGrid').on('click', function () {
+                $('#grid thead').empty();
+                $('#grid tbody').empty();
+            });
+        });
+    </script>
+    </head>
+<body>
+    <h2>jQuery Grid Parser Test</h2>
+    <div class="hint">Rows are comma-separated, columns are @-separated. First 3 columns: <strong>Cate</strong>, <strong>Item</strong>, <strong>Qty</strong>. Remaining entries are key-value pairs like <em>weight 737</em>.</div>
+
+    <textarea id="rawInput" rows="10" placeholder="Paste your string value here..."></textarea>
+    <div class="controls">
+        <button id="buildGrid">Build Grid</button>
+        <button id="clearGrid">Clear</button>
+    </div>
+
+    <table id="grid">
+        <thead></thead>
+        <tbody></tbody>
+    </table>
+</body>
+</html>
+
